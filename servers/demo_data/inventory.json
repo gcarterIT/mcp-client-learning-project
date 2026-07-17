@@ -1,0 +1,42 @@
+[
+  {
+    "product_id": "P100",
+    "name": "Mechanical Keyboard",
+    "category": "computer-accessories",
+    "price": 89.99,
+    "quantity": 14,
+    "description": "A compact mechanical keyboard with tactile switches."
+  },
+  {
+    "product_id": "P101",
+    "name": "Wireless Mouse",
+    "category": "computer-accessories",
+    "price": 34.50,
+    "quantity": 28,
+    "description": "An ergonomic wireless mouse with adjustable sensitivity."
+  },
+  {
+    "product_id": "P102",
+    "name": "USB-C Dock",
+    "category": "computer-accessories",
+    "price": 119.00,
+    "quantity": 6,
+    "description": "A multiport USB-C dock with HDMI, Ethernet, and USB ports."
+  },
+  {
+    "product_id": "P200",
+    "name": "Notebook",
+    "category": "office-supplies",
+    "price": 7.25,
+    "quantity": 50,
+    "description": "A hardcover ruled notebook containing 200 pages."
+  },
+  {
+    "product_id": "P201",
+    "name": "Desk Lamp",
+    "category": "office-supplies",
+    "price": 42.00,
+    "quantity": 9,
+    "description": "An adjustable LED desk lamp with three brightness settings."
+  }
+]

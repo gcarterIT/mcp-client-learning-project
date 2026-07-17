@@ -1,0 +1,15 @@
+[tool.pytest.ini_options]
+
+# Add the project root to Python's import search path while pytest runs.
+#
+# This allows tests to import project packages such as:
+#
+#     from servers.demo_logic import load_inventory
+#
+pythonpath = ["."]
+
+# Tell pytest where the test files are stored.
+testpaths = ["tests"]
+
+# Display shorter, easier-to-read tracebacks.
+addopts = "-ra"

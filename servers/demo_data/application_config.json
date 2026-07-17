@@ -1,0 +1,7 @@
+{
+  "application_name": "MCP Inventory Learning Server",
+  "environment": "development",
+  "currency": "USD",
+  "allow_inventory_updates": false,
+  "maximum_search_results": 10
+}
