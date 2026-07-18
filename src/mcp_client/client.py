@@ -50,8 +50,9 @@ from pathlib import Path
 from typing import Any
 
 from mcp import ClientSession, types
-from mcp.client.stdio import StdioServerParameters, stdio_client
+from mcp.client.stdio import StdioServerParameters
 
+from connection import MCPConnection
 
 def get_project_root() -> Path:
     """
@@ -2947,105 +2948,97 @@ async def main() -> None:
 
     print("\nStarting MCP server...")
 
-    # ---------------------------------------------------------
-    # Launch the server and obtain STDIO streams.
-    # ---------------------------------------------------------
+    async with MCPConnection(server_parameters) as connection:
+        # MCPConnection guarantees that the session has already completed
+        # the MCP initialization handshake.
+        session = connection.session
 
-    async with stdio_client(server_parameters) as (
-        read_stream,
-        write_stream,
-    ):
-        print("Server subprocess created.")
+        assert session is not None, (
+            "MCPConnection entered without exposing a ClientSession."
+        )
 
-        # -----------------------------------------------------
-        # Create one MCP protocol session over those streams.
-        # -----------------------------------------------------
+        # Preserve the initialization result previously returned directly
+        # by session.initialize().
+        initialization_result = connection.initialization_result
 
-        async with ClientSession(
-            read_stream,
-            write_stream,
-        ) as session:
-            print("Initializing MCP session...")
+        print("MCP session initialized successfully.")
 
-            initialization_result = await session.initialize()
+        print(
+            "Negotiated protocol version:",
+            initialization_result.protocolVersion,
+        )
+        print(
+            "Connected server:",
+            initialization_result.serverInfo.name,
+        )
 
-            print("MCP session initialized successfully.")
-            print(
-                "Negotiated protocol version:",
-                initialization_result.protocolVersion,
-            )
-            print(
-                "Connected server:",
-                initialization_result.serverInfo.name,
-            )
+        # -------------------------------------------------
+        # Part 3B begins here.
+        #
+        # We now query the initialized server for metadata
+        # describing its available capabilities.
+        # -------------------------------------------------
+        
+        # -------------------------------------------------
+        # Discover the server's advertised capabilities.
+                    #
+        # Part 3C needs the tool result.
+        # Part 4A needs the resource result.
+        # -------------------------------------------------
 
-            # -------------------------------------------------
-            # Part 3B begins here.
-            #
-            # We now query the initialized server for metadata
-            # describing its available capabilities.
-            # -------------------------------------------------
-            
-            # -------------------------------------------------
-            # Discover the server's advertised capabilities.
-                        #
-            # Part 3C needs the tool result.
-            # Part 4A needs the resource result.
-            # -------------------------------------------------
+        (
+            tools_result,
+            resources_result,
+            templates_result,
+            prompts_result,
+        ) = await discover_capabilities(session)
 
-            (
-                tools_result,
-                resources_result,
-                templates_result,
-                prompts_result,
-            ) = await discover_capabilities(session)
+        # -------------------------------------------------
+        # Part 3C:
+        # Invoke and verify one deterministic tool.
+        # -------------------------------------------------
 
-            # -------------------------------------------------
-            # Part 3C:
-            # Invoke and verify one deterministic tool.
-            # -------------------------------------------------
+        await invoke_add_numbers(
+            session=session,
+            tools_result=tools_result,
+        )
 
-            await invoke_add_numbers(
-                session=session,
-                tools_result=tools_result,
-            )
+        # -------------------------------------------------
+        # Part 4A:
+        # Read and verify one static JSON resource.
+        # -------------------------------------------------
 
-            # -------------------------------------------------
-            # Part 4A:
-            # Read and verify one static JSON resource.
-            # -------------------------------------------------
+        await read_application_configuration(
+            session=session,
+            resources_result=resources_result,
+        )
+        
+        # -------------------------------------------------
+        # Part 4B:
+        # Read and verify resource template.
+        # -------------------------------------------------
+        
+        await test_product_resource_template(
+            session=session,
+            templates_result=templates_result,
+        )
 
-            await read_application_configuration(
-                session=session,
-                resources_result=resources_result,
-            )
-            
-            # -------------------------------------------------
-            # Part 4B:
-            # Read and verify resource template.
-            # -------------------------------------------------
-            
-            await test_product_resource_template(
-                session=session,
-                templates_result=templates_result,
-            )
+        # -------------------------------------------------
+        # Part 4C:
+        # Read and verify prompts.
+        # -------------------------------------------------
 
-            # -------------------------------------------------
-            # Part 4C:
-            # Read and verify prompts.
-            # -------------------------------------------------
- 
-            await test_mcp_prompts(
-                session=session,
-                prompts_result=prompts_result,
-            ) 
-            
-            
-            
-    print("\nConnection closed cleanly.")
-    print("Part 4A static resource read completed.")
-    print("Part 4B resource-template testing completed.")
-    print("Part 4C MCP prompt testing completed.")
+        await test_mcp_prompts(
+            session=session,
+            prompts_result=prompts_result,
+        ) 
+                
+                
+                
+        print("\nConnection closed cleanly.")
+        print("Part 4A static resource read completed.")
+        print("Part 4B resource-template testing completed.")
+        print("Part 4C MCP prompt testing completed.")
     
 if __name__ == "__main__":
     """
