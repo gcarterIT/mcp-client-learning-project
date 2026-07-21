@@ -1,0 +1,72 @@
+10. Run the current regression baseline
+=======================================
+
+Tool discovery
+--------------
+Function name:
+Start line:
+End line:
+Direct SDK call:
+Return type:
+Validation helper used:
+Print statements present:
+Other dependencies:
+
+Static-resource discovery
+-------------------------
+Function name:
+Start line:
+End line:
+Direct SDK call:
+Return type:
+Validation helper used:
+Print statements present:
+Other dependencies:
+
+Resource-template discovery
+---------------------------
+Function name:
+Start line:
+End line:
+Direct SDK call:
+Return type:
+Validation helper used:
+Print statements present:
+Other dependencies:
+
+Prompt discovery
+----------------
+Function name:
+Start line:
+End line:
+Direct SDK call:
+Return type:
+Validation helper used:
+Print statements present:
+Other dependencies:
+
+
+Milestone 5C.1 verification checklist
+=====================================
+
+[ ] No source code changed
+
+[ ] Direct list_tools call identified
+
+[ ] Direct list_resources call identified
+
+[ ] Direct list_resource_templates call identified
+
+[ ] Direct list_prompts call identified
+
+[ ] Discovery helper functions identified
+
+[ ] Discovery validation dependencies identified
+
+[ ] Demonstration printing identified separately
+
+[ ] Pagination behavior checked
+
+[ ] Complete Part 5C baseline regression passes
+
+[ ] Baseline output saved
