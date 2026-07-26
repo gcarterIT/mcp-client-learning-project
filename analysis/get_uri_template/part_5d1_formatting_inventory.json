@@ -1,0 +1,248 @@
+{
+  "analyzed_file": "C:\\AI_Projects\\mcp_client_learning_project\\src\\mcp_client\\client.py",
+  "functions": [
+    {
+      "function": "display_tool_result",
+      "defined_in": "C:\\AI_Projects\\mcp_client_learning_project\\src\\mcp_client\\client.py",
+      "definition_line": 163,
+      "end_line": 238,
+      "called_from": [
+        {
+          "containing_function": "invoke_add_numbers",
+          "line": 462,
+          "call_expression": "display_tool_result"
+        }
+      ],
+      "dependencies": [
+        "format_json",
+        "get_structured_tool_content",
+        "types.TextContent"
+      ],
+      "contains_print": true,
+      "print_lines": [
+        187,
+        188,
+        189,
+        197,
+        199,
+        204,
+        210,
+        211,
+        216,
+        221,
+        229,
+        233,
+        236,
+        238
+      ],
+      "candidate_for_formatters": "Yes",
+      "candidate_reason": "Its name indicates a presentation responsibility. It writes human-readable terminal output.",
+      "formatter_score": 6,
+      "returns_meaningful_value": false,
+      "contains_await": false,
+      "contains_raise_or_assert": false,
+      "performs_mcp_or_session_call": false,
+      "contains_parsing_logic": false,
+      "mutates_or_accumulates_data": false
+    },
+    {
+      "function": "display_resource_metadata",
+      "defined_in": "C:\\AI_Projects\\mcp_client_learning_project\\src\\mcp_client\\client.py",
+      "definition_line": 531,
+      "end_line": 557,
+      "called_from": [
+        {
+          "containing_function": "read_application_configuration",
+          "line": 1710,
+          "call_expression": "display_resource_metadata"
+        }
+      ],
+      "dependencies": [],
+      "contains_print": true,
+      "print_lines": [
+        545,
+        546,
+        547,
+        549,
+        554
+      ],
+      "candidate_for_formatters": "Yes",
+      "candidate_reason": "Its name indicates a presentation responsibility. It writes human-readable terminal output.",
+      "formatter_score": 6,
+      "returns_meaningful_value": false,
+      "contains_await": false,
+      "contains_raise_or_assert": false,
+      "performs_mcp_or_session_call": false,
+      "contains_parsing_logic": false,
+      "mutates_or_accumulates_data": false
+    },
+    {
+      "function": "display_resource_template_metadata",
+      "defined_in": "C:\\AI_Projects\\mcp_client_learning_project\\src\\mcp_client\\client.py",
+      "definition_line": 745,
+      "end_line": 779,
+      "called_from": [
+        {
+          "containing_function": "test_product_resource_template",
+          "line": 1211,
+          "call_expression": "display_resource_template_metadata"
+        }
+      ],
+      "dependencies": [
+        "get_mime_type",
+        "get_uri_template"
+      ],
+      "contains_print": true,
+      "print_lines": [
+        755,
+        757,
+        763,
+        769,
+        775
+      ],
+      "candidate_for_formatters": "Yes",
+      "candidate_reason": "Its name indicates a presentation responsibility. It writes human-readable terminal output.",
+      "formatter_score": 6,
+      "returns_meaningful_value": false,
+      "contains_await": false,
+      "contains_raise_or_assert": false,
+      "performs_mcp_or_session_call": false,
+      "contains_parsing_logic": false,
+      "mutates_or_accumulates_data": false
+    },
+    {
+      "function": "display_resource_read_result",
+      "defined_in": "C:\\AI_Projects\\mcp_client_learning_project\\src\\mcp_client\\client.py",
+      "definition_line": 1470,
+      "end_line": 1569,
+      "called_from": [
+        {
+          "containing_function": "read_json_resource",
+          "line": 882,
+          "call_expression": "display_resource_read_result"
+        },
+        {
+          "containing_function": "read_application_configuration",
+          "line": 1728,
+          "call_expression": "display_resource_read_result"
+        }
+      ],
+      "dependencies": [
+        "format_json",
+        "get_resource_blob",
+        "get_resource_text",
+        "parse_json_resource_text"
+      ],
+      "contains_print": true,
+      "print_lines": [
+        1498,
+        1499,
+        1500,
+        1505,
+        1508,
+        1513,
+        1514,
+        1515,
+        1517,
+        1518,
+        1522,
+        1532,
+        1533,
+        1534,
+        1541,
+        1542,
+        1549,
+        1550,
+        1558,
+        1561,
+        1567
+      ],
+      "candidate_for_formatters": "Mixed / manual review required",
+      "candidate_reason": "Its name indicates a presentation responsibility. It writes human-readable terminal output. It returns a meaningful value. It contains parsing logic. It accumulates or mutates data.",
+      "formatter_score": 1,
+      "returns_meaningful_value": true,
+      "contains_await": false,
+      "contains_raise_or_assert": false,
+      "performs_mcp_or_session_call": false,
+      "contains_parsing_logic": true,
+      "mutates_or_accumulates_data": true
+    },
+    {
+      "function": "display_prompt_metadata",
+      "defined_in": "C:\\AI_Projects\\mcp_client_learning_project\\src\\mcp_client\\client.py",
+      "definition_line": 1894,
+      "end_line": 1964,
+      "called_from": [
+        {
+          "containing_function": "retrieve_and_verify_prompt",
+          "line": 2459,
+          "call_expression": "display_prompt_metadata"
+        }
+      ],
+      "dependencies": [
+        "get_prompt_arguments",
+        "is_prompt_argument_required"
+      ],
+      "contains_print": true,
+      "print_lines": [
+        1920,
+        1921,
+        1925,
+        1931,
+        1934,
+        1953,
+        1956,
+        1960
+      ],
+      "candidate_for_formatters": "Yes",
+      "candidate_reason": "Its name indicates a presentation responsibility. It writes human-readable terminal output.",
+      "formatter_score": 6,
+      "returns_meaningful_value": false,
+      "contains_await": false,
+      "contains_raise_or_assert": false,
+      "performs_mcp_or_session_call": false,
+      "contains_parsing_logic": false,
+      "mutates_or_accumulates_data": false
+    },
+    {
+      "function": "display_prompt_result",
+      "defined_in": "C:\\AI_Projects\\mcp_client_learning_project\\src\\mcp_client\\client.py",
+      "definition_line": 2219,
+      "end_line": 2295,
+      "called_from": [
+        {
+          "containing_function": "retrieve_and_verify_prompt",
+          "line": 2491,
+          "call_expression": "display_prompt_result"
+        }
+      ],
+      "dependencies": [
+        "get_prompt_content_text",
+        "normalize_prompt_role"
+      ],
+      "contains_print": true,
+      "print_lines": [
+        2242,
+        2243,
+        2244,
+        2250,
+        2253,
+        2277,
+        2278,
+        2282,
+        2289,
+        2290,
+        2292
+      ],
+      "candidate_for_formatters": "Yes",
+      "candidate_reason": "Its name indicates a presentation responsibility. It writes human-readable terminal output.",
+      "formatter_score": 6,
+      "returns_meaningful_value": false,
+      "contains_await": false,
+      "contains_raise_or_assert": false,
+      "performs_mcp_or_session_call": false,
+      "contains_parsing_logic": false,
+      "mutates_or_accumulates_data": false
+    }
+  ]
+}

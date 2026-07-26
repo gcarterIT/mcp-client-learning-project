@@ -1,3 +1,5 @@
+from formatters import format_json
+
 import json
 
 from typing import Any
@@ -246,36 +248,4 @@ def display_prompts(prompts_result: Any) -> None:
 
             # MCP prompt arguments typically use a required Boolean.
             print(f"  Required: {argument.required}")
-
-def format_json(value: Any) -> str:
-    """
-    Convert a Python value into readable, indented JSON text.
-
-    Tool input schemas are represented as Python dictionaries after the
-    MCP SDK parses the server response. JSON indentation makes those
-    schemas easier for humans to inspect.
-
-    Parameters
-    ----------
-    value:
-        Any JSON-compatible Python value, such as a dictionary or list.
-
-    Returns
-    -------
-    str
-        An indented JSON string.
-
-    Why use default=str?
-    --------------------
-    Most MCP metadata is JSON-compatible. If an SDK-specific object appears,
-    default=str prevents the diagnostic display from crashing merely because
-    a value is not directly serializable.
-    """
-
-    return json.dumps(
-        value,
-        indent=2,
-        ensure_ascii=False,
-        default=str,
-    )
 
