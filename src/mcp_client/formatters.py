@@ -2,6 +2,12 @@ import json
 from mcp import types
 from typing import Any
 
+from validation import (
+    get_prompt_arguments,
+    parse_json_resource_text,
+)
+
+
 def display_resource_metadata(resource: Any) -> None:
     """
     Display metadata for one discovered resource.
@@ -405,4 +411,250 @@ def display_tool_result(tool_result: Any) -> None:
     else:
         print(format_json(structured_content))
 
+
+def is_prompt_argument_required(
+    argument: Any,
+) -> bool:
+    """
+    Determine whether one prompt argument is required.
+
+    MCP prompt argument metadata normally exposes:
+
+        argument.required
+
+    A missing value is treated as False because MCP argument metadata may
+    omit the field for optional arguments.
+    """
+
+    return bool(
+        getattr(
+            argument,
+            "required",
+            False,
+        )
+    )
+
+
+def display_prompt_metadata(
+    prompt: Any,
+) -> None:
+    """
+    Display one discovered prompt and its argument definitions.
+
+    This is discovery metadata. It describes how to request the prompt;
+    it is not the rendered prompt result.
+    """
+
+    prompt_name = getattr(
+        prompt,
+        "name",
+        None,
+    )
+
+    description = getattr(
+        prompt,
+        "description",
+        None,
+    )
+
+    arguments = get_prompt_arguments(
+        prompt
+    )
+
+    print("\nDiscovered prompt metadata:")
+    print(
+        "Name:",
+        prompt_name or "(No name provided)",
+    )
+    print(
+        "Description:",
+        description or "(No description provided)",
+    )
+
+    if not arguments:
+        print("Arguments: none")
+        return
+
+    print("Arguments:")
+
+    for argument in arguments:
+        argument_name = getattr(
+            argument,
+            "name",
+            None,
+        )
+
+        argument_description = getattr(
+            argument,
+            "description",
+            None,
+        )
+
+        required = is_prompt_argument_required(
+            argument
+        )
+
+        print(
+            f"  - name: {argument_name or '(missing name)'}"
+        )
+        print(
+            "    required:",
+            required,
+        )
+        print(
+            "    description:",
+            argument_description
+            or "(No description provided)",
+        )
+
+
+
+def get_resource_text(content: Any) -> str | None:
+    """
+    Extract text from one MCP resource-content object.
+
+    MCP resources may return different content types.
+
+    Text resource content commonly provides:
+
+        content.text
+
+    Binary resource content commonly provides:
+
+        content.blob
+
+    Part 4A reads a JSON configuration resource, so text is expected.
+
+    Returns
+    -------
+    str | None
+        The text value when the content object contains text.
+        None when it does not contain text.
+    """
+
+    text = getattr(content, "text", None)
+
+    if isinstance(text, str):
+        return text
+
+    return None
+
+
+def get_resource_blob(content: Any) -> str | bytes | None:
+    """
+    Return binary resource data when available.
+
+    MCP binary resource content is commonly represented through a `blob`
+    field. Depending on the SDK and serialization stage, that value may be
+    a Base64 string or bytes-like data.
+
+    We do not decode or use binary content in Part 4A. This helper exists so
+    the display logic can report binary content accurately rather than
+    pretending every resource is text.
+    """
+
+    return getattr(content, "blob", None)
+
+
+
+def display_resource_read_result(
+    read_result: Any,
+) -> list[str]:
+    """
+    Display all content entries returned by read_resource().
+
+    Parameters
+    ----------
+    read_result:
+        The ReadResourceResult returned by session.read_resource().
+
+    Returns
+    -------
+    list[str]
+        Every text resource body found in the result.
+
+    Why return the text values?
+    ---------------------------
+    The function has two responsibilities:
+
+    1. Show the returned resource content for the student.
+    2. Collect text values so the verification function can parse and
+       validate them.
+
+    A later reusable design may separate display and extraction more
+    strictly. For this milestone, keeping the workflow visible is helpful.
+    """
+
+    print("\n" + "=" * 70)
+    print("RESOURCE READ RESULT")
+    print("=" * 70)
+
+    contents = getattr(read_result, "contents", None)
+
+    if not contents:
+        print("The server returned no resource content.")
+        return []
+
+    print(f"Content item count: {len(contents)}")
+
+    text_values: list[str] = []
+
+    for index, content in enumerate(contents, start=1):
+        print("\n" + "-" * 70)
+        print(f"Content Item {index}")
+        print("-" * 70)
+
+        print(f"Python type: {type(content).__name__}")
+        print(f"URI: {getattr(content, 'uri', '(No URI provided)')}")
+
+        mime_type = getattr(content, "mimeType", None)
+
+        print(
+            "MIME type:",
+            mime_type or "(No MIME type provided)",
+        )
+
+        resource_text = get_resource_text(content)
+
+        if resource_text is not None:
+            text_values.append(resource_text)
+
+            print("Content type: Text")
+            print("Raw text:")
+            print(resource_text)
+
+            # If the item advertises JSON, also display the parsed,
+            # indented representation.
+            if mime_type == "application/json":
+                parsed_value = parse_json_resource_text(resource_text)
+
+                print("\nParsed JSON:")
+                print(format_json(parsed_value))
+
+            continue
+
+        resource_blob = get_resource_blob(content)
+
+        if resource_blob is not None:
+            print("Content type: Binary")
+            print(
+                "Binary content was returned. "
+                "Part 4A does not decode binary resources."
+            )
+            continue
+
+        # This protects the display code against future content types that
+        # do not expose either text or blob in the expected form.
+        print("Content type: Unknown")
+
+        if hasattr(content, "model_dump"):
+            print(
+                format_json(
+                    content.model_dump(by_alias=True)
+                )
+            )
+        else:
+            print(content)
+
+    return text_values
 
