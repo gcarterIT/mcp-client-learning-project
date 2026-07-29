@@ -1,0 +1,15 @@
+[✓] package-module execution attempted
+
+Command:
+python -m mcp_client.client
+
+Result:
+ModuleNotFoundError: No module named 'discovery'
+
+Conclusion:
+Package-mode execution is not currently supported because client.py
+uses bare sibling imports such as:
+
+from discovery import ...
+
+This is a pre-existing limitation and is not a Part 5F.1 regression.

@@ -115,78 +115,6 @@ def get_project_root() -> Path:
     return Path(__file__).resolve().parents[2]
 
 
-def build_demo_server_parameters(
-    project_root: Path,
-) -> StdioServerParameters:
-    """
-    Build the STDIO launch configuration for the demo MCP server.
-
-    Responsibilities
-    ----------------
-    1. Copy the current process environment.
-    2. Add the project root to PYTHONPATH.
-    3. Configure the demo server to run as a Python module.
-    4. Use the same Python interpreter as the client.
-
-    Parameters
-    ----------
-    project_root:
-        Absolute path to the project's root directory.
-
-    Returns
-    -------
-    StdioServerParameters
-        Configuration used by MCPConnection to start the demo server.
-
-    Notes
-    -----
-    This function only builds configuration.
-
-    It does not:
-
-    - verify that the server file exists
-    - start the server
-    - open an MCP connection
-    - print output
-    - modify os.environ directly
-    """
-
-    # Copy the environment so changes made for the child process do not
-    # modify the environment of the running client process.
-    server_environment = os.environ.copy()
-
-    existing_pythonpath = server_environment.get(
-        "PYTHONPATH"
-    )
-
-    # Add the project root first so imports such as
-    #
-    #     from servers.demo_logic import ...
-    #
-    # can be resolved by the child server process.
-    if existing_pythonpath:
-        server_environment["PYTHONPATH"] = (
-            f"{project_root}"
-            f"{os.pathsep}"
-            f"{existing_pythonpath}"
-        )
-    else:
-        server_environment["PYTHONPATH"] = str(
-            project_root
-        )
-
-    # This is equivalent to running:
-    #
-    #     python -m servers.demo_server
-    #
-    # sys.executable ensures that the child process uses the same Python
-    # interpreter and virtual environment as the client.
-    return StdioServerParameters(
-        command=sys.executable,
-        args=["-m", "servers.demo_server"],
-        env=server_environment,
-    )
-
 
 def display_resource_template_metadata(
     template: Any,
@@ -224,6 +152,180 @@ def display_resource_template_metadata(
         or "(No MIME type provided)",
     )
 
+def build_demo_server_parameters(
+    project_root: Path,
+) -> StdioServerParameters:
+    """
+    Build the STDIO launch configuration for the demo MCP server.
+    """
+
+    server_environment = os.environ.copy()
+
+    existing_pythonpath = server_environment.get("PYTHONPATH")
+
+    if existing_pythonpath:
+        server_environment["PYTHONPATH"] = (
+            f"{project_root}{os.pathsep}{existing_pythonpath}"
+        )
+    else:
+        server_environment["PYTHONPATH"] = str(project_root)
+
+    return StdioServerParameters(
+        command=sys.executable,
+        args=["-m", "servers.demo_server"],
+        env=server_environment,
+    )
+
+    
+
+def display_startup_information(
+    project_root: Any,
+) -> None:
+    """
+    Display the MCP client startup and environment information.
+
+    Parameters
+    ----------
+    project_root:
+        The resolved root directory of the current project.
+
+    Notes
+    -----
+    This function performs presentation only. It does not start the
+    MCP server or create the client connection.
+    """
+
+    print("=" * 70)
+    print("PART 4A — STATIC MCP RESOURCE")
+    print("PART 4B — MCP RESOURCE TEMPLATES")
+    print("PART 4C — MCP PROMPTS")
+    print("=" * 70)
+    print(f"Python interpreter: {sys.executable}")
+    print(f"Project root:       {project_root}")
+    print("Server module:      servers.demo_server")
+
+    print("\nStarting MCP server...")
+
+async def discover_server_capabilities(
+    session: ClientSession,
+) -> tuple[Any, Any, Any, Any]:
+    """
+    Discover the MCP server capabilities used by the demonstration workflows.
+
+    Parameters
+    ----------
+    session:
+        The initialized MCP ClientSession.
+
+    Returns
+    -------
+    tuple[Any, Any, Any, Any]
+        The discovered:
+
+        1. tools result
+        2. resources result
+        3. resource templates result
+        4. prompts result
+
+    Notes
+    -----
+    This function creates an orchestration boundary around capability
+    discovery. It does not change discovery behavior or modify the
+    returned results.
+    """
+
+    return await discover_capabilities(session)
+
+
+async def run_demonstration_workflows(
+    session: ClientSession,
+    tools_result: Any,
+    resources_result: Any,
+    templates_result: Any,
+    prompts_result: Any,
+) -> None:
+    """
+    Run the deterministic MCP capability demonstrations in order.
+
+    This function coordinates the workflows that use the capability
+    metadata previously returned by discover_capabilities().
+
+    Execution order
+    ---------------
+    1. Invoke and verify the add_numbers tool.
+    2. Read and verify the application configuration resource.
+    3. Expand and verify the product resource template.
+    4. Retrieve and verify the advertised prompts.
+
+    Parameters
+    ----------
+    session:
+        The initialized MCP ClientSession.
+
+    tools_result:
+        The previously discovered tool metadata.
+
+    resources_result:
+        The previously discovered static-resource metadata.
+
+    templates_result:
+        The previously discovered resource-template metadata.
+
+    prompts_result:
+        The previously discovered prompt metadata.
+
+    Notes
+    -----
+    This function does not:
+
+    - create or close the MCP connection,
+    - perform capability discovery,
+    - change the order of any workflow,
+    - catch or alter exceptions,
+    - or change any displayed output.
+
+    It only gives the existing demonstration sequence a clear owner.
+    """
+
+    # ---------------------------------------------------------
+    # Part 3C:
+    # Invoke and verify one deterministic tool.
+    # ---------------------------------------------------------
+
+    await invoke_add_numbers(
+        session=session,
+        tools_result=tools_result,
+    )
+
+    # ---------------------------------------------------------
+    # Part 4A:
+    # Read and verify one static JSON resource.
+    # ---------------------------------------------------------
+
+    await read_application_configuration(
+        session=session,
+        resources_result=resources_result,
+    )
+
+    # ---------------------------------------------------------
+    # Part 4B:
+    # Read and verify the product resource template.
+    # ---------------------------------------------------------
+
+    await test_product_resource_template(
+        session=session,
+        templates_result=templates_result,
+    )
+
+    # ---------------------------------------------------------
+    # Part 4C:
+    # Retrieve and verify prompts.
+    # ---------------------------------------------------------
+
+    await test_mcp_prompts(
+        session=session,
+        prompts_result=prompts_result,
+    )
   
   
 async def main() -> None:
@@ -252,14 +354,9 @@ async def main() -> None:
     # ---------------------------------------------------------
 
     project_root = get_project_root()
-    server_path = project_root / "servers" / "demo_server.py"
-
-    if not server_path.is_file():
-        raise FileNotFoundError(
-            "The MCP demo server could not be found.\n"
-            f"Expected location: {server_path}"
-        )
-
+    
+    
+    
     # ---------------------------------------------------------
     # Build the child-process launch configuration.
     #
@@ -268,23 +365,12 @@ async def main() -> None:
     # ---------------------------------------------------------
 
     server_parameters = build_demo_server_parameters(
-        project_root
+        project_root=project_root,
     )
 
-    # ---------------------------------------------------------
-    # Print deterministic startup diagnostics.
-    # ---------------------------------------------------------
-
-    print("=" * 70)
-    print("PART 4A — STATIC MCP RESOURCE")
-    print("PART 4B — MCP RESOURCE TEMPLATES")
-    print("PART 4C — MCP PROMPTS")
-    print("=" * 70)
-    print(f"Python interpreter: {sys.executable}")
-    print(f"Project root:       {project_root}")
-    print("Server module:      servers.demo_server")
-
-    print("\nStarting MCP server...")
+    display_startup_information(
+        project_root=project_root,
+    )
 
     async with MCPConnection(server_parameters) as connection:
         # MCPConnection guarantees that the session has already completed
@@ -329,48 +415,19 @@ async def main() -> None:
             resources_result,
             templates_result,
             prompts_result,
-        ) = await discover_capabilities(session)
-
+        ) = await discover_server_capabilities(session)
+        
         # -------------------------------------------------
-        # Part 3C:
-        # Invoke and verify one deterministic tool.
+        # Run the deterministic capability demonstrations.
         # -------------------------------------------------
 
-        await invoke_add_numbers(
+        await run_demonstration_workflows(
             session=session,
             tools_result=tools_result,
-        )
-
-        # -------------------------------------------------
-        # Part 4A:
-        # Read and verify one static JSON resource.
-        # -------------------------------------------------
-
-        await read_application_configuration(
-            session=session,
             resources_result=resources_result,
-        )
-        
-        # -------------------------------------------------
-        # Part 4B:
-        # Read and verify resource template.
-        # -------------------------------------------------
-        
-        await test_product_resource_template(
-            session=session,
             templates_result=templates_result,
-        )
-
-        # -------------------------------------------------
-        # Part 4C:
-        # Read and verify prompts.
-        # -------------------------------------------------
-
-        await test_mcp_prompts(
-            session=session,
             prompts_result=prompts_result,
-        ) 
-                
+        )                
                 
                 
         print("\nConnection closed cleanly.")
