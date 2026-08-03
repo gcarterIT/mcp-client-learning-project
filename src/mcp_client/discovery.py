@@ -1,4 +1,4 @@
-from formatters import format_json
+from mcp_client.formatters import format_json
 
 import json
 

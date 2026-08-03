@@ -26,13 +26,13 @@ from typing import Any
 
 from mcp import ClientSession
 
-from formatters import (
+from mcp_client.formatters import (
     display_resource_metadata,
     display_resource_read_result,
     get_resource_text,
 )
 
-from validation import (
+from mcp_client.validation import (
     parse_json_resource_text,
 )
 

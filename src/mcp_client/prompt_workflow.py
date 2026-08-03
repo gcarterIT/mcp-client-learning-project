@@ -29,7 +29,7 @@ from typing import Any
 
 from mcp import ClientSession
 
-from formatters import (
+from mcp_client.formatters import (
     display_prompt_metadata,
     display_prompt_result,
     get_prompt_content_text,
@@ -37,7 +37,7 @@ from formatters import (
     normalize_prompt_role,
 )
 
-from validation import (
+from mcp_client.validation import (
     get_prompt_arguments,
 )
 

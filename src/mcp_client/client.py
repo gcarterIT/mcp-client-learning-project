@@ -51,13 +51,14 @@ from typing import Any
 from mcp import ClientSession
 from mcp.client.stdio import StdioServerParameters
 
-from discovery import (
+
+from mcp_client.discovery import (
     discover_capabilities,
 )
 
-from connection import MCPConnection
+from mcp_client.connection import MCPConnection
 
-from formatters import (
+from mcp_client.formatters import (
     display_resource_read_result,
     display_resource_template_metadata,
     get_mime_type,
@@ -67,24 +68,24 @@ from formatters import (
     format_json,
 )
 
-from prompt_workflow import (
+from mcp_client.prompt_workflow import (
     test_mcp_prompts,
 )
 
-from static_resource_workflow import (
+from mcp_client.static_resource_workflow import (
     read_application_configuration,
 )
 
-from tool_workflow import (
+from mcp_client.tool_workflow import (
     invoke_add_numbers,
 )
 
-from validation import (
+from mcp_client.validation import (
     parse_json_resource_text,
 
 )
 
-from resource_template_workflow import (
+from mcp_client.resource_template_workflow import (
     test_product_resource_template,
 )
 

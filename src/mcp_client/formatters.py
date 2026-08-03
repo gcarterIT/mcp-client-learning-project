@@ -2,7 +2,7 @@ import json
 from mcp import types
 from typing import Any
 
-from validation import (
+from mcp_client.validation import (
     get_prompt_arguments,
     parse_json_resource_text,
 )

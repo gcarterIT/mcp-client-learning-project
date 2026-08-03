@@ -25,7 +25,7 @@ from typing import Any
 
 from mcp import ClientSession, types
 
-from formatters import (
+from mcp_client.formatters import (
     display_tool_result,
     format_json,
     get_structured_tool_content,

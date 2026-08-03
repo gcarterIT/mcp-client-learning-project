@@ -29,7 +29,7 @@ from typing import Any
 
 from mcp import ClientSession
 
-from formatters import (
+from mcp_client.formatters import (
     display_resource_read_result,
     display_resource_template_metadata,
     get_mime_type,
@@ -37,7 +37,7 @@ from formatters import (
     get_uri_template,
 )
 
-from validation import (
+from mcp_client.validation import (
     parse_json_resource_text,
 )
 
