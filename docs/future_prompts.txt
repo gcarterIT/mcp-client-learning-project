@@ -1,0 +1,20 @@
+1. summarize the steps to enforce 3 different start methods
+
+Run the direct-file mode:
+--------------------------
+python src\mcp_client\client.py
+
+
+package-module mode:
+--------------------
+python -m mcp_client.client
+
+
+canonical execution mode
+-----------------------
+python -m mcp_client
+
+
+
+
+2. geenrally should this be one of last steps during development 
