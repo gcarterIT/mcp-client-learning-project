@@ -20,6 +20,7 @@ from mcp.client.stdio import StdioServerParameters
 
 from mcp_client.client import (
     build_demo_server_parameters,
+    discover_server_capabilities,
     get_project_root,
     run_demonstration_workflows,
 )
@@ -347,3 +348,54 @@ async def test_run_demonstration_workflows_calls_workflows_in_order(
             prompts_result,
         ),
     ]
+
+@pytest.mark.asyncio
+async def test_discover_server_capabilities_delegates_and_returns_result(
+    monkeypatch,
+) -> None:
+    """
+    Verify that discover_server_capabilities() delegates discovery exactly
+    once, passes the original session, and returns the result unchanged.
+
+    No real MCP session or server is required because the wrapper does not
+    inspect the session or discovery result.
+    """
+
+    # Arrange
+    #
+    # Unique object instances allow the test to verify object identity.
+    session = object()
+
+    tools_result = object()
+    resources_result = object()
+    templates_result = object()
+    prompts_result = object()
+
+    expected_result = (
+        tools_result,
+        resources_result,
+        templates_result,
+        prompts_result,
+    )
+
+    recorded_sessions: list[object] = []
+
+    async def fake_discover_capabilities(
+        received_session,
+    ):
+        recorded_sessions.append(received_session)
+        return expected_result
+
+    # Patch the name where discover_server_capabilities() looks it up.
+    monkeypatch.setattr(
+        "mcp_client.client.discover_capabilities",
+        fake_discover_capabilities,
+    )
+
+    # Act
+    actual_result = await discover_server_capabilities(session)
+
+    # Assert
+    assert recorded_sessions == [session]
+
+    assert actual_result is expected_result
