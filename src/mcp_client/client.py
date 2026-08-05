@@ -117,41 +117,6 @@ def get_project_root() -> Path:
 
 
 
-def display_resource_template_metadata(
-    template: Any,
-) -> None:
-    """
-    Display metadata for one discovered resource template.
-
-    This metadata describes how concrete resource URIs can be constructed.
-    It does not contain the product data itself.
-    """
-
-    print("\nDiscovered resource-template metadata:")
-
-    print(
-        "URI template:",
-        get_uri_template(template)
-        or "(No URI template provided)",
-    )
-
-    print(
-        "Name:",
-        getattr(template, "name", None)
-        or "(No name provided)",
-    )
-
-    print(
-        "Description:",
-        getattr(template, "description", None)
-        or "(No description provided)",
-    )
-
-    print(
-        "Advertised MIME type:",
-        get_mime_type(template)
-        or "(No MIME type provided)",
-    )
 
 def build_demo_server_parameters(
     project_root: Path,
