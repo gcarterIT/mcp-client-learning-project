@@ -1154,6 +1154,655 @@ async def test_discover_capabilities_propagates_list_prompts_failure_and_stops(
 
     display_prompts_mock.assert_not_called()
     
+    
+@pytest.mark.anyio
+async def test_discover_capabilities_propagates_display_tools_failure_and_stops(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Protect failure behavior when tool discovery succeeds but its
+    presentation helper fails.
+
+    Expected behavior:
+
+        list_tools()
+            ↓
+        returns tools_result
+            ↓
+        display_tools(tools_result)
+            ↓
+        raises the original exception
+            ↓
+        discover_capabilities() propagates that same exception
+            ↓
+        no later discovery or display operation runs
+    """
+
+    # -------------------------------------------------------------
+    # Arrange: create the successful discovery result.
+    #
+    # The real display helper will be replaced, so a plain object is
+    # sufficient. Identity assertions will verify that this exact
+    # object reaches display_tools().
+    # -------------------------------------------------------------
+
+    tools_result = object()
+
+    # Create one specific exception instance.
+    #
+    # Later, an identity assertion verifies direct propagation rather
+    # than exception wrapping or replacement.
+    expected_exception = RuntimeError(
+        "tool display failed"
+    )
+
+    # -------------------------------------------------------------
+    # Arrange: create the fake session.
+    #
+    # Tool discovery succeeds. All later discovery operations should
+    # remain unreachable after display_tools() fails.
+    # -------------------------------------------------------------
+
+    session = Mock()
+
+    session.list_tools = AsyncMock(
+        return_value=tools_result
+    )
+    session.list_resources = AsyncMock()
+    session.list_resource_templates = AsyncMock()
+    session.list_prompts = AsyncMock()
+
+    # -------------------------------------------------------------
+    # Arrange: configure display_tools() to fail.
+    #
+    # The remaining display helpers are normal mocks so the test can
+    # prove that they were never called.
+    # -------------------------------------------------------------
+
+    display_tools_mock = Mock(
+        side_effect=expected_exception
+    )
+    display_resources_mock = Mock()
+    display_resource_templates_mock = Mock()
+    display_prompts_mock = Mock()
+
+    monkeypatch.setattr(
+        discovery,
+        "display_tools",
+        display_tools_mock,
+    )
+
+    monkeypatch.setattr(
+        discovery,
+        "display_resources",
+        display_resources_mock,
+    )
+
+    monkeypatch.setattr(
+        discovery,
+        "display_resource_templates",
+        display_resource_templates_mock,
+    )
+
+    monkeypatch.setattr(
+        discovery,
+        "display_prompts",
+        display_prompts_mock,
+    )
+
+    # -------------------------------------------------------------
+    # Act and assert: execute discovery and capture the failure.
+    # -------------------------------------------------------------
+
+    with pytest.raises(RuntimeError) as exception_info:
+        await discovery.discover_capabilities(session)
+
+    # -------------------------------------------------------------
+    # Assert 1: the exact display exception propagated.
+    # -------------------------------------------------------------
+
+    assert exception_info.value is expected_exception
+
+    # -------------------------------------------------------------
+    # Assert 2: tool discovery completed successfully once.
+    # -------------------------------------------------------------
+
+    session.list_tools.assert_awaited_once_with()
+
+    # -------------------------------------------------------------
+    # Assert 3: display_tools() received the exact tools result.
+    # -------------------------------------------------------------
+
+    display_tools_mock.assert_called_once_with(
+        tools_result
+    )
+
+    # -------------------------------------------------------------
+    # Assert 4: no later discovery operation began.
+    # -------------------------------------------------------------
+
+    session.list_resources.assert_not_awaited()
+    session.list_resource_templates.assert_not_awaited()
+    session.list_prompts.assert_not_awaited()
+
+    # -------------------------------------------------------------
+    # Assert 5: no later presentation helper ran.
+    # -------------------------------------------------------------
+
+    display_resources_mock.assert_not_called()
+    display_resource_templates_mock.assert_not_called()
+    display_prompts_mock.assert_not_called()  
+    
+    
+@pytest.mark.anyio
+async def test_discover_capabilities_propagates_display_resources_failure_and_stops(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Protect failure behavior when resource discovery succeeds but its
+    presentation helper fails.
+
+    Expected behavior:
+
+        list_tools()
+            ↓
+        succeeds
+            ↓
+        display_tools()
+            ↓
+        succeeds
+            ↓
+        list_resources()
+            ↓
+        succeeds
+            ↓
+        display_resources()
+            ↓
+        raises the original exception
+            ↓
+        discover_capabilities() propagates that same exception
+            ↓
+        later discovery and presentation operations do not run
+    """
+
+    # -------------------------------------------------------------
+    # Arrange: create successful discovery results.
+    #
+    # Plain object instances are sufficient because the real display
+    # helpers are replaced with mocks.
+    # -------------------------------------------------------------
+
+    tools_result = object()
+    resources_result = object()
+
+    # Create one specific exception instance so we can verify that
+    # discover_capabilities() propagates this exact object.
+    expected_exception = RuntimeError(
+        "resource display failed"
+    )
+
+    # -------------------------------------------------------------
+    # Arrange: create the fake session.
+    #
+    # Tool and resource discovery succeed.
+    # Template and prompt discovery must remain unreachable.
+    # -------------------------------------------------------------
+
+    session = Mock()
+
+    session.list_tools = AsyncMock(
+        return_value=tools_result
+    )
+
+    session.list_resources = AsyncMock(
+        return_value=resources_result
+    )
+
+    session.list_resource_templates = AsyncMock()
+    session.list_prompts = AsyncMock()
+
+    # -------------------------------------------------------------
+    # Arrange: configure the display helpers.
+    #
+    # display_tools() succeeds.
+    # display_resources() raises.
+    # Later display helpers must never run.
+    # -------------------------------------------------------------
+
+    display_tools_mock = Mock()
+
+    display_resources_mock = Mock(
+        side_effect=expected_exception
+    )
+
+    display_resource_templates_mock = Mock()
+    display_prompts_mock = Mock()
+
+    monkeypatch.setattr(
+        discovery,
+        "display_tools",
+        display_tools_mock,
+    )
+
+    monkeypatch.setattr(
+        discovery,
+        "display_resources",
+        display_resources_mock,
+    )
+
+    monkeypatch.setattr(
+        discovery,
+        "display_resource_templates",
+        display_resource_templates_mock,
+    )
+
+    monkeypatch.setattr(
+        discovery,
+        "display_prompts",
+        display_prompts_mock,
+    )
+
+    # -------------------------------------------------------------
+    # Act and assert: execute discovery and capture the failure.
+    # -------------------------------------------------------------
+
+    with pytest.raises(RuntimeError) as exception_info:
+        await discovery.discover_capabilities(session)
+
+    # -------------------------------------------------------------
+    # Assert 1: preserve the original exception object.
+    # -------------------------------------------------------------
+
+    assert exception_info.value is expected_exception
+
+    # -------------------------------------------------------------
+    # Assert 2: verify the exact partial-progress boundary.
+    #
+    # Both tool and resource discovery completed successfully.
+    # -------------------------------------------------------------
+
+    session.list_tools.assert_awaited_once_with()
+    session.list_resources.assert_awaited_once_with()
+
+    # -------------------------------------------------------------
+    # Assert 3: verify successful earlier presentation.
+    # -------------------------------------------------------------
+
+    display_tools_mock.assert_called_once_with(
+        tools_result
+    )
+
+    # -------------------------------------------------------------
+    # Assert 4: verify that the failing helper received the exact
+    # resource result.
+    # -------------------------------------------------------------
+
+    display_resources_mock.assert_called_once_with(
+        resources_result
+    )
+
+    # -------------------------------------------------------------
+    # Assert 5: no later MCP discovery operation began.
+    # -------------------------------------------------------------
+
+    session.list_resource_templates.assert_not_awaited()
+    session.list_prompts.assert_not_awaited()
+
+    # -------------------------------------------------------------
+    # Assert 6: no later display helper ran.
+    # -------------------------------------------------------------
+
+    display_resource_templates_mock.assert_not_called()
+    display_prompts_mock.assert_not_called()
+    
+@pytest.mark.anyio
+async def test_discover_capabilities_propagates_display_resource_templates_failure_and_stops(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Protect failure behavior when resource-template discovery succeeds
+    but its presentation helper fails.
+
+    Expected behavior:
+
+        list_tools()
+            ↓
+        succeeds
+            ↓
+        display_tools()
+            ↓
+        succeeds
+            ↓
+        list_resources()
+            ↓
+        succeeds
+            ↓
+        display_resources()
+            ↓
+        succeeds
+            ↓
+        list_resource_templates()
+            ↓
+        succeeds
+            ↓
+        display_resource_templates()
+            ↓
+        raises the original exception
+            ↓
+        discover_capabilities() propagates that same exception
+            ↓
+        prompt discovery and presentation do not run
+    """
+
+    # -------------------------------------------------------------
+    # Arrange: create successful discovery results for all work
+    # completed before the failure point.
+    # -------------------------------------------------------------
+
+    tools_result = object()
+    resources_result = object()
+    templates_result = object()
+
+    expected_exception = RuntimeError(
+        "resource-template display failed"
+    )
+
+    # -------------------------------------------------------------
+    # Arrange: create the fake session.
+    #
+    # The first three discovery operations succeed.
+    # Prompt discovery must remain unreachable.
+    # -------------------------------------------------------------
+
+    session = Mock()
+
+    session.list_tools = AsyncMock(
+        return_value=tools_result
+    )
+
+    session.list_resources = AsyncMock(
+        return_value=resources_result
+    )
+
+    session.list_resource_templates = AsyncMock(
+        return_value=templates_result
+    )
+
+    session.list_prompts = AsyncMock()
+
+    # -------------------------------------------------------------
+    # Arrange: configure display behavior.
+    #
+    # Tools and resources display successfully.
+    # Resource-template presentation fails.
+    # Prompt presentation must never run.
+    # -------------------------------------------------------------
+
+    display_tools_mock = Mock()
+    display_resources_mock = Mock()
+
+    display_resource_templates_mock = Mock(
+        side_effect=expected_exception
+    )
+
+    display_prompts_mock = Mock()
+
+    monkeypatch.setattr(
+        discovery,
+        "display_tools",
+        display_tools_mock,
+    )
+
+    monkeypatch.setattr(
+        discovery,
+        "display_resources",
+        display_resources_mock,
+    )
+
+    monkeypatch.setattr(
+        discovery,
+        "display_resource_templates",
+        display_resource_templates_mock,
+    )
+
+    monkeypatch.setattr(
+        discovery,
+        "display_prompts",
+        display_prompts_mock,
+    )
+
+    # -------------------------------------------------------------
+    # Act and assert: execute discovery and capture the failure.
+    # -------------------------------------------------------------
+
+    with pytest.raises(RuntimeError) as exception_info:
+        await discovery.discover_capabilities(session)
+
+    # -------------------------------------------------------------
+    # Assert 1: the exact original exception propagated.
+    # -------------------------------------------------------------
+
+    assert exception_info.value is expected_exception
+
+    # -------------------------------------------------------------
+    # Assert 2: all discovery operations before the failure boundary
+    # completed exactly once.
+    # -------------------------------------------------------------
+
+    session.list_tools.assert_awaited_once_with()
+    session.list_resources.assert_awaited_once_with()
+    session.list_resource_templates.assert_awaited_once_with()
+
+    # -------------------------------------------------------------
+    # Assert 3: all earlier successful results were displayed once.
+    # -------------------------------------------------------------
+
+    display_tools_mock.assert_called_once_with(
+        tools_result
+    )
+
+    display_resources_mock.assert_called_once_with(
+        resources_result
+    )
+
+    # -------------------------------------------------------------
+    # Assert 4: the failing helper received the exact template result.
+    # -------------------------------------------------------------
+
+    display_resource_templates_mock.assert_called_once_with(
+        templates_result
+    )
+
+    # -------------------------------------------------------------
+    # Assert 5: prompt discovery never began.
+    # -------------------------------------------------------------
+
+    session.list_prompts.assert_not_awaited()
+
+    # -------------------------------------------------------------
+    # Assert 6: prompt presentation never ran.
+    # -------------------------------------------------------------
+
+    display_prompts_mock.assert_not_called()    
+    
+    
+@pytest.mark.anyio
+async def test_discover_capabilities_propagates_display_prompts_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Protect failure behavior when prompt discovery succeeds but its
+    presentation helper fails.
+
+    Expected behavior:
+
+        list_tools()
+            ↓
+        succeeds
+            ↓
+        display_tools()
+            ↓
+        succeeds
+            ↓
+        list_resources()
+            ↓
+        succeeds
+            ↓
+        display_resources()
+            ↓
+        succeeds
+            ↓
+        list_resource_templates()
+            ↓
+        succeeds
+            ↓
+        display_resource_templates()
+            ↓
+        succeeds
+            ↓
+        list_prompts()
+            ↓
+        succeeds
+            ↓
+        display_prompts()
+            ↓
+        raises the original exception
+            ↓
+        discover_capabilities() propagates that same exception
+            ↓
+        normal result tuple is never returned
+    """
+
+    # -------------------------------------------------------------
+    # Arrange: create one result object for every successful MCP
+    # discovery operation.
+    # -------------------------------------------------------------
+
+    tools_result = object()
+    resources_result = object()
+    templates_result = object()
+    prompts_result = object()
+
+    # Create one specific exception instance so identity-preserving
+    # propagation can be verified.
+    expected_exception = RuntimeError(
+        "prompt display failed"
+    )
+
+    # -------------------------------------------------------------
+    # Arrange: create the fake session.
+    #
+    # Every MCP discovery operation succeeds in this test.
+    # -------------------------------------------------------------
+
+    session = Mock()
+
+    session.list_tools = AsyncMock(
+        return_value=tools_result
+    )
+
+    session.list_resources = AsyncMock(
+        return_value=resources_result
+    )
+
+    session.list_resource_templates = AsyncMock(
+        return_value=templates_result
+    )
+
+    session.list_prompts = AsyncMock(
+        return_value=prompts_result
+    )
+
+    # -------------------------------------------------------------
+    # Arrange: configure presentation behavior.
+    #
+    # The first three display helpers succeed.
+    # display_prompts() fails.
+    # -------------------------------------------------------------
+
+    display_tools_mock = Mock()
+    display_resources_mock = Mock()
+    display_resource_templates_mock = Mock()
+
+    display_prompts_mock = Mock(
+        side_effect=expected_exception
+    )
+
+    monkeypatch.setattr(
+        discovery,
+        "display_tools",
+        display_tools_mock,
+    )
+
+    monkeypatch.setattr(
+        discovery,
+        "display_resources",
+        display_resources_mock,
+    )
+
+    monkeypatch.setattr(
+        discovery,
+        "display_resource_templates",
+        display_resource_templates_mock,
+    )
+
+    monkeypatch.setattr(
+        discovery,
+        "display_prompts",
+        display_prompts_mock,
+    )
+
+    # -------------------------------------------------------------
+    # Act and assert: execute discovery and capture the presentation
+    # failure.
+    # -------------------------------------------------------------
+
+    with pytest.raises(RuntimeError) as exception_info:
+        await discovery.discover_capabilities(session)
+
+    # -------------------------------------------------------------
+    # Assert 1: the exact original exception propagated.
+    # -------------------------------------------------------------
+
+    assert exception_info.value is expected_exception
+
+    # -------------------------------------------------------------
+    # Assert 2: every MCP discovery operation completed exactly once.
+    # -------------------------------------------------------------
+
+    session.list_tools.assert_awaited_once_with()
+    session.list_resources.assert_awaited_once_with()
+    session.list_resource_templates.assert_awaited_once_with()
+    session.list_prompts.assert_awaited_once_with()
+
+    # -------------------------------------------------------------
+    # Assert 3: every earlier presentation helper received the exact
+    # corresponding result object.
+    # -------------------------------------------------------------
+
+    display_tools_mock.assert_called_once_with(
+        tools_result
+    )
+
+    display_resources_mock.assert_called_once_with(
+        resources_result
+    )
+
+    display_resource_templates_mock.assert_called_once_with(
+        templates_result
+    )
+
+    # -------------------------------------------------------------
+    # Assert 4: the failing prompt display helper received the exact
+    # prompts result.
+    # -------------------------------------------------------------
+
+    display_prompts_mock.assert_called_once_with(
+        prompts_result
+    )    
+    
+    
+    
 def test_display_prompts_handles_none_arguments(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
@@ -1335,7 +1984,11 @@ def test_display_helper_uses_fallback_for_empty_description(
         discovery_result
     )
 
-    # Capture the helper's terminal output.
+ 
+
+
+
+ # Capture the helper's terminal output.
     captured_output = capsys.readouterr().out
 
     # Confirm that this output belongs to the expected metadata item.
@@ -1349,3 +2002,6 @@ def test_display_helper_uses_fallback_for_empty_description(
 
     # The helper must complete normally.
     assert returned_value is None
+ 
+
+
