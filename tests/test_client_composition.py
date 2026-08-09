@@ -399,3 +399,516 @@ async def test_discover_server_capabilities_delegates_and_returns_result(
     assert recorded_sessions == [session]
 
     assert actual_result is expected_result
+    
+@pytest.mark.asyncio
+async def test_main_composes_application_in_correct_order(monkeypatch):
+    """
+    Protect the successful top-level composition performed by main().
+
+    This test deliberately does NOT exercise the real MCP transport,
+    discovery protocol operations, or demonstration workflows.
+
+    Those subsystems already have their own regression protection.
+
+    Instead, this test verifies that main():
+
+    1. Resolves the project root.
+    2. Builds the server parameters.
+    3. Displays startup information.
+    4. Enters MCPConnection.
+    5. Uses the session exposed by that connection.
+    6. Discovers capabilities with that same session.
+    7. Passes the same session and discovery results into the
+       demonstration workflow orchestrator.
+    8. Completes workflow execution before leaving MCPConnection.
+    """
+
+    # ---------------------------------------------------------
+    # Import the module, not only main().
+    #
+    # We need the module object because monkeypatch will replace
+    # the dependencies that main() looks up from that module.
+    # ---------------------------------------------------------
+    import mcp_client.client as client
+
+
+    # ---------------------------------------------------------
+    # Record important architectural events.
+    #
+    # We care about subsystem relationships and lifecycle order,
+    # not internal implementation details.
+    # ---------------------------------------------------------
+    events = []
+
+
+    # ---------------------------------------------------------
+    # Create unique sentinel objects.
+    #
+    # These let us prove that the exact same objects flow across
+    # the composition boundaries.
+    # ---------------------------------------------------------
+    fake_project_root = object()
+    fake_server_parameters = object()
+    fake_session = object()
+
+    fake_tools_result = object()
+    fake_resources_result = object()
+    fake_templates_result = object()
+    fake_prompts_result = object()
+
+    fake_capabilities = (
+        fake_tools_result,
+        fake_resources_result,
+        fake_templates_result,
+        fake_prompts_result,
+    )
+
+
+    # ---------------------------------------------------------
+    # Fake project-root resolution.
+    # ---------------------------------------------------------
+    def fake_get_project_root():
+        events.append("get_project_root")
+
+        return fake_project_root
+
+
+    # ---------------------------------------------------------
+    # Fake server-parameter construction.
+    #
+    # This assertion protects the handoff:
+    #
+    #     project root
+    #         ↓
+    #     server configuration
+    # ---------------------------------------------------------
+    def fake_build_demo_server_parameters(project_root):
+        assert project_root is fake_project_root
+
+        events.append("build_demo_server_parameters")
+
+        return fake_server_parameters
+
+
+    # ---------------------------------------------------------
+    # Fake startup display.
+    #
+    # We are not testing printed text here. Presentation behavior
+    # belongs to other regression contracts.
+    # ---------------------------------------------------------
+    def fake_display_startup_information(*args, **kwargs):
+        events.append("display_startup_information")
+
+
+    # ---------------------------------------------------------
+    # Fake MCP connection.
+    #
+    # The context manager records entry and exit so that we can
+    # prove discovery and workflow execution occur while the
+    # connection is active.
+    # ---------------------------------------------------------
+    class FakeMCPConnection:
+
+        def __init__(self, server_parameters):
+            assert server_parameters is fake_server_parameters
+
+            events.append("create_connection")
+
+            self.session = None
+
+            # main() may display initialization metadata.
+            #
+            # Provide the minimum structure needed for that
+            # existing production behavior.
+            self.initialization_result = type(
+                "FakeInitializationResult",
+                (),
+                {
+                    "protocolVersion": "test-protocol",
+                    "serverInfo": type(
+                        "FakeServerInfo",
+                        (),
+                        {
+                            "name": "test-server",
+                        },
+                    )(),
+                },
+            )()
+
+
+        async def __aenter__(self):
+            events.append("enter_connection")
+
+            self.session = fake_session
+
+            return self
+
+
+        async def __aexit__(
+            self,
+            exc_type,
+            exc_value,
+            traceback,
+        ):
+            events.append("exit_connection")
+
+            self.session = None
+
+            return False
+
+
+    # ---------------------------------------------------------
+    # Fake discovery orchestration.
+    #
+    # Protect the session handoff:
+    #
+    #     MCPConnection
+    #         ↓
+    #     discovery
+    # ---------------------------------------------------------
+    async def fake_discover_server_capabilities(session):
+        assert session is fake_session
+
+        events.append("discover")
+
+        return fake_capabilities
+
+
+    # ---------------------------------------------------------
+    # Fake demonstration workflow orchestration.
+    #
+    # Protect both:
+    #
+    #     same session
+    #
+    # and
+    #
+    #     same capability results
+    #
+    # crossing the main() composition boundary.
+    # ---------------------------------------------------------
+    async def fake_run_demonstration_workflows(
+        session,
+        tools_result,
+        resources_result,
+        templates_result,
+        prompts_result,
+    ):
+        assert session is fake_session
+
+        assert tools_result is fake_tools_result
+        assert resources_result is fake_resources_result
+        assert templates_result is fake_templates_result
+        assert prompts_result is fake_prompts_result
+
+        events.append("run_workflows")
+
+
+    # ---------------------------------------------------------
+    # Replace only the major dependencies owned outside main().
+    # ---------------------------------------------------------
+    monkeypatch.setattr(
+        client,
+        "get_project_root",
+        fake_get_project_root,
+    )
+
+    monkeypatch.setattr(
+        client,
+        "build_demo_server_parameters",
+        fake_build_demo_server_parameters,
+    )
+
+    monkeypatch.setattr(
+        client,
+        "display_startup_information",
+        fake_display_startup_information,
+    )
+
+    monkeypatch.setattr(
+        client,
+        "MCPConnection",
+        FakeMCPConnection,
+    )
+
+    monkeypatch.setattr(
+        client,
+        "discover_server_capabilities",
+        fake_discover_server_capabilities,
+    )
+
+    monkeypatch.setattr(
+        client,
+        "run_demonstration_workflows",
+        fake_run_demonstration_workflows,
+    )
+
+
+    # ---------------------------------------------------------
+    # Execute the real composition root.
+    # ---------------------------------------------------------
+    await client.main()
+
+
+    # ---------------------------------------------------------
+    # Protect the architectural sequence.
+    #
+    # Most importantly:
+    #
+    #     enter_connection
+    #          ↓
+    #       discover
+    #          ↓
+    #    run_workflows
+    #          ↓
+    #     exit_connection
+    #
+    # Discovery and workflow execution therefore remain inside
+    # the active MCP connection lifetime.
+    # ---------------------------------------------------------
+    assert events == [
+        "get_project_root",
+        "build_demo_server_parameters",
+        "display_startup_information",
+        "create_connection",
+        "enter_connection",
+        "discover",
+        "run_workflows",
+        "exit_connection",
+    ]
+    
+    
+@pytest.mark.asyncio
+async def test_main_propagates_discovery_failure_and_skips_workflows(
+    monkeypatch,
+):
+    """
+    Protect main() when capability discovery fails.
+
+    Architectural contract:
+
+        enter MCPConnection
+            ↓
+        discover capabilities
+            ↓
+        discovery raises
+            ↓
+        demonstration workflows are NOT executed
+            ↓
+        MCPConnection exits
+            ↓
+        the original discovery exception propagates
+
+    This test does not test the internal behavior of MCPConnection
+    or the discovery subsystem. Those subsystems have their own
+    dedicated regression tests.
+    """
+
+    import mcp_client.client as client
+
+    # ---------------------------------------------------------
+    # Record only the architectural events that matter.
+    # ---------------------------------------------------------
+    events = []
+
+    # ---------------------------------------------------------
+    # Create unique objects so identity can be verified.
+    # ---------------------------------------------------------
+    fake_project_root = object()
+    fake_server_parameters = object()
+    fake_session = object()
+
+    # Use one specific exception instance.
+    #
+    # Later we will verify that this exact object escapes main(),
+    # proving that main() does not replace or transform the error.
+    discovery_error = RuntimeError(
+        "simulated discovery failure"
+    )
+
+
+    # ---------------------------------------------------------
+    # Configuration test doubles.
+    # ---------------------------------------------------------
+    def fake_get_project_root():
+        events.append("get_project_root")
+
+        return fake_project_root
+
+
+    def fake_build_demo_server_parameters(project_root):
+        assert project_root is fake_project_root
+
+        events.append("build_demo_server_parameters")
+
+        return fake_server_parameters
+
+
+    def fake_display_startup_information(*args, **kwargs):
+        events.append("display_startup_information")
+
+
+    # ---------------------------------------------------------
+    # Fake connection context manager.
+    #
+    # We need only enough behavior to prove that discovery happens
+    # inside the connection lifetime and that __aexit__ runs after
+    # discovery raises.
+    # ---------------------------------------------------------
+    class FakeMCPConnection:
+
+        def __init__(self, server_parameters):
+            assert server_parameters is fake_server_parameters
+
+            events.append("create_connection")
+
+            self.session = None
+
+            self.initialization_result = type(
+                "FakeInitializationResult",
+                (),
+                {
+                    "protocolVersion": "test-protocol",
+                    "serverInfo": type(
+                        "FakeServerInfo",
+                        (),
+                        {
+                            "name": "test-server",
+                        },
+                    )(),
+                },
+            )()
+
+
+        async def __aenter__(self):
+            events.append("enter_connection")
+
+            self.session = fake_session
+
+            return self
+
+
+        async def __aexit__(
+            self,
+            exc_type,
+            exc_value,
+            traceback,
+        ):
+            events.append("exit_connection")
+
+            # The exception reaching __aexit__ must be the same
+            # discovery exception raised below.
+            assert exc_type is RuntimeError
+            assert exc_value is discovery_error
+
+            self.session = None
+
+            # False means:
+            #
+            #     do not suppress the exception
+            #
+            # Therefore the exception should continue outward
+            # from main().
+            return False
+
+
+    # ---------------------------------------------------------
+    # Discovery succeeds far enough to receive the correct
+    # session, then deliberately fails.
+    # ---------------------------------------------------------
+    async def fake_discover_server_capabilities(session):
+        assert session is fake_session
+
+        events.append("discover")
+
+        raise discovery_error
+
+
+    # ---------------------------------------------------------
+    # This must NEVER execute.
+    #
+    # If it runs, main() incorrectly continued after discovery
+    # failed.
+    # ---------------------------------------------------------
+    async def fake_run_demonstration_workflows(*args, **kwargs):
+        events.append("run_workflows")
+
+        pytest.fail(
+            "run_demonstration_workflows() must not run "
+            "after discovery fails"
+        )
+
+
+    # ---------------------------------------------------------
+    # Replace main()'s major external dependencies.
+    # ---------------------------------------------------------
+    monkeypatch.setattr(
+        client,
+        "get_project_root",
+        fake_get_project_root,
+    )
+
+    monkeypatch.setattr(
+        client,
+        "build_demo_server_parameters",
+        fake_build_demo_server_parameters,
+    )
+
+    monkeypatch.setattr(
+        client,
+        "display_startup_information",
+        fake_display_startup_information,
+    )
+
+    monkeypatch.setattr(
+        client,
+        "MCPConnection",
+        FakeMCPConnection,
+    )
+
+    monkeypatch.setattr(
+        client,
+        "discover_server_capabilities",
+        fake_discover_server_capabilities,
+    )
+
+    monkeypatch.setattr(
+        client,
+        "run_demonstration_workflows",
+        fake_run_demonstration_workflows,
+    )
+
+
+    # ---------------------------------------------------------
+    # Execute the real main().
+    #
+    # pytest.raises captures the exception only so that we can
+    # verify its identity afterward.
+    # ---------------------------------------------------------
+    with pytest.raises(RuntimeError) as exc_info:
+        await client.main()
+
+
+    # ---------------------------------------------------------
+    # Protect exception identity.
+    #
+    # "is" is intentional. We want the SAME exception object,
+    # not merely another RuntimeError with the same message.
+    # ---------------------------------------------------------
+    assert exc_info.value is discovery_error
+
+
+    # ---------------------------------------------------------
+    # Protect the architectural failure sequence.
+    #
+    # Notice that "run_workflows" must be absent.
+    # ---------------------------------------------------------
+    assert events == [
+        "get_project_root",
+        "build_demo_server_parameters",
+        "display_startup_information",
+        "create_connection",
+        "enter_connection",
+        "discover",
+        "exit_connection",
+    ]
