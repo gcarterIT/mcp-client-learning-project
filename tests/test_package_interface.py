@@ -30,9 +30,17 @@ def test_discover_capabilities_is_importable_async_function() -> None:
     assert inspect.iscoroutinefunction(discover_capabilities)
 
 
-def test_package_root_does_not_export_uncurated_shortcuts() -> None:
-    """The package root should remain empty until exports are intentional."""
+def test_package_root_exports_only_intentional_public_api() -> None:
+    """The package root should expose only intentionally public symbols."""
 
-    assert not hasattr(mcp_client, "MCPConnection")
+    # MCPConnection is now an intentionally supported package-root API.
+    assert hasattr(mcp_client, "MCPConnection")
+
+    # The package-root symbol must be the exact same class defined
+    # in mcp_client.connection, not a wrapper, subclass, or copy.
+    assert mcp_client.MCPConnection is MCPConnection
+
+    # These remain implementation/application-level symbols and should
+    # not become package-root shortcuts.
     assert not hasattr(mcp_client, "discover_capabilities")
     assert not hasattr(mcp_client, "main")
