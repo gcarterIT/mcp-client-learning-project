@@ -1,0 +1,122 @@
+# Part 13 — Final Project Architecture and Documentation Closure Review
+
+We are continuing my MCP Client Learning Project.
+
+Part 12 is complete. The reusable Python public API has been formally
+reviewed, established, and protected.
+
+Please use the attached project context files as the authoritative basis
+for this conversation:
+
+- PART13_CONTEXT_20260821.md
+- Part_12_Completion_Note.md
+
+The complete regression baseline is now 72 passing tests.
+
+Part 12 established that:
+
+- application execution interfaces and the reusable Python API are
+  separate architectural concerns
+- MCPConnection is the intentionally supported reusable package API
+- the preferred consumer import is:
+
+    from mcp_client import MCPConnection
+
+- the package-root symbol is the same class defined by
+  mcp_client.connection.MCPConnection
+- MCPConnection remains a lifecycle abstraction rather than a complete
+  façade over ClientSession
+- exposing MCP SDK semantic types such as ClientSession,
+  InitializeResult, and StdioServerParameters remains intentional and
+  acceptable
+- discover_capabilities() was not promoted to the package-root public API
+- its tuple ordering and presentation behavior therefore remain internal
+  application-level contract concerns rather than newly created public
+  package compatibility obligations
+- workflow functions remain demo/application-specific
+- formatting and validation helpers remain internal support functions
+- no DTO layer, ClientSession wrapper, generic workflow abstraction,
+  packaging redesign, or dependency change was justified
+- the existing package-interface regression was updated to protect the
+  curated MCPConnection root export
+- a new external-style public-consumer integration test proves that:
+
+    from mcp_client import MCPConnection
+
+  can establish a real initialized MCP connection and expose a usable
+  ClientSession
+- all three supported application execution modes remain valid
+- the complete regression baseline is now 72 passing tests
+
+Therefore begin with:
+
+# Part 13A — Final Project Architecture and Documentation Closure Review
+
+Before proposing any implementation:
+
+1. Review the complete project architecture established across Parts
+   1–12.
+2. Confirm that the closed subsystem boundaries remain mutually coherent.
+3. Review the project's documentation architecture and identify any
+   descriptions that are now stale or inconsistent with the implemented
+   system.
+4. Specifically determine whether README or architecture documentation
+   still describes the mcp_client package root as empty or uncurated.
+5. Determine where the supported reusable API should be documented:
+
+       from mcp_client import MCPConnection
+
+6. Confirm that documentation clearly distinguishes:
+
+       application execution interface
+               ≠
+       reusable Python public API
+
+7. Confirm that documentation accurately distinguishes:
+   - project-owned lifecycle policy
+   - MCP SDK public semantic API
+   - Discovery
+   - application/demo workflows
+   - formatting and validation support
+8. Review whether documentation should record the current 72-test
+   regression baseline.
+9. Review placeholders and unused modules only to determine whether they
+   create genuine architectural or documentation confusion.
+10. Review configuration and demo-server boundaries only if they expose a
+    genuine remaining inconsistency.
+11. Identify any architectural territory still important enough to
+    prevent project closure.
+12. Clearly distinguish:
+    - architectural requirements
+    - documentation synchronization
+    - packaging concerns
+    - production hardening
+    - optional cleanup
+    - future enhancements
+13. Do not reopen Connection, Discovery, Workflow, Application
+    Composition, SDK Boundary, or Public API architecture without a
+    genuine new requirement.
+14. Do not add tests merely for coverage.
+15. Do not refactor production code merely for cleanup or symmetry.
+16. Do not introduce packaging, publishing, or deployment work merely
+    because the core architecture is nearing completion.
+17. Determine whether any production change is actually required.
+18. Recommend the smallest next Part 13 milestone only after completing
+    the Part 13A review.
+
+Continue using the established teaching contract:
+
+- architecture before implementation
+- professor/software-architect style
+- extremely small, highly testable milestones
+- preserve behavior exactly
+- compile after every implementation change
+- run the complete 72-test regression suite after every implementation
+  milestone
+- stop after every checkpoint
+- separate architectural decisions from implementation
+- do not add tests merely to increase coverage
+- do not refactor production code merely for symmetry or cleanup
+
+Do not begin coding or documentation edits until Part 13A is
+architecturally understood.

@@ -2,7 +2,7 @@
 
 Learning the Model Context Protocol by building deterministic MCP clients.
 
-## Running the Client
+## Running the Client (APPLICATION EXECUTION INTERFACE)
 
 The recommended package execution command is:
 
@@ -21,24 +21,68 @@ All three commands execute the same MCP client demonstration workflow.
 
 ## Library Usage
 
-Reusable package interfaces should be imported from their defining modules:
+The intentionally supported reusable Python API is:
 
-```python
-from mcp_client.connection import MCPConnection
-from mcp_client.discovery import discover_capabilities
-```
-
-`MCPConnection` manages the lifecycle of a single STDIO-based MCP client connection.
-
-`discover_capabilities` retrieves the tools, static resources, resource templates, and prompts advertised by an initialized MCP session.
-
-The package root currently does not re-export these symbols. Prefer explicit module imports rather than package-root imports such as:
+Running the demonstration application and using the package as a reusable
+Python library are separate interfaces.
 
 ```python
 from mcp_client import MCPConnection
 ```
 
-Modules such as `client`, `formatters`, `validation`, and the workflow modules primarily support the demonstration application and should not yet be considered part of the project's stable public API.
+`MCPConnection` manages the lifecycle of a single STDIO-based MCP client connection.
+
+`discover_capabilities()` remains an internal application-level discovery
+helper rather than part of the intentionally supported package-root API.
+
+mcp_client.MCPConnection
+        is
+mcp_client.connection.MCPConnection:
+
+```python
+from mcp_client import MCPConnection
+```
+
+`MCPConnection` is the intentionally supported reusable package API.
+
+`discover_capabilities()`, `client`, `formatters`, `validation`, and the
+workflow modules remain application-level or internal support concerns
+and are not currently part of the intentionally supported package-root API.
+
+Running the demonstration application and using the package as a Python
+library are separate interfaces.
+
+- `python -m mcp_client` runs the application.
+- `from mcp_client import MCPConnection` imports the supported reusable
+  connection-lifecycle API for another Python program.
+  
+`MCPConnection` owns connection lifecycle policy. It is not a complete
+wrapper around the MCP SDK: consumers may still work directly with MCP
+SDK types such as `ClientSession`, `InitializeResult`, and
+`StdioServerParameters`.  
+
+
+RUN APPLICATION
+───────────────
+python -m mcp_client
+        │
+        ▼
+application composition
+        │
+        ▼
+demo workflows
+
+
+USE AS LIBRARY
+──────────────
+from mcp_client import MCPConnection
+        │
+        ▼
+connection lifecycle
+        │
+        ▼
+initialized ClientSession
+
 
 ## Planned Applications
 
@@ -50,3 +94,11 @@ Modules such as `client`, `formatters`, `validation`, and the workflow modules p
 
 - STDIO
 - Streamable HTTP
+
+
+## Testing
+
+Run the complete regression suite with:
+
+```powershell
+python -m pytest
